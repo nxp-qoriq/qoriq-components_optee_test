@@ -14,13 +14,6 @@
 #include "ta_crypto_perf.h"
 #include "ta_crypto_perf_priv.h"
 
-#define CHECK(res, name, action) do {			\
-		if ((res) != TEE_SUCCESS) {		\
-			DMSG(name ": 0x%08x", (res));	\
-			action				\
-		}					\
-	} while(0)
-
 #define TAG_LEN	128
 
 static uint8_t iv[] = { 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7,

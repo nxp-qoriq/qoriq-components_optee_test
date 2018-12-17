@@ -1,13 +1,24 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
  * Copyright (c) 2015, Linaro Limited
+ * Copyright 2018 NXP
  */
 
 #ifndef TA_CRYPTO_PERF_H
 #define TA_CRYPTO_PERF_H
 
+#include <tee_api_types.h>
+#include <utee_defines.h>
+
 #define TA_CRYPTO_PERF_UUID { 0x02a42f43, 0xd8b7, 0x4a57, \
 	{ 0xaa, 0x4d, 0x87, 0xbd, 0x9b, 0x55, 0x87, 0xcb } }
+
+/* TA Capabilities structure */
+struct ta_caps {
+	uint8_t  nb_algo;
+	uint32_t sizeof_alg_list;
+
+};
 
 /*
  * Commands implemented by the TA
@@ -26,6 +37,11 @@
 #define TA_CRYPTO_PERF_CMD_ASYM_PROCESS_GEN_KEYPAIR		10
 #define TA_CRYPTO_PERF_CMD_ASYM_PROCESS				11
 #define TA_CRYPTO_PERF_CMD_ASYM_FREE_ATTRS			12
+#define TA_CRYPTO_PERF_CMD_GET_CAPS				13
+#define TA_CRYPTO_PERF_CMD_GET_LIST_ALG				14
+#define TA_CRYPTO_PERF_CMD_PREPARE_ALG				15
+#define TA_CRYPTO_PERF_CMD_PROCESS				16
+#define TA_CRYPTO_PERF_CMD_FREE_ALG				17
 
 /*
  * Supported AES modes of operation
@@ -145,4 +161,44 @@ enum rsa_mode {
 	RSASSA_PKCS1_PSS_MGF1_SHA512 = 16,
 };
 
+uint32_t get_nb_algo(void);
+uint32_t get_size_name_alg_list(void);
+void     copy_name_alg_list(char *buffer);
+uint32_t get_alg_id(char *name);
+
+
+/* Cipher Functions */
+TEE_Result TA_CipherPrepareAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_CipherProcessAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_CipherFreeAlgo(uint32_t algo, TEE_Param params[4]);
+
+/* Digest Functions */
+TEE_Result TA_DigestPrepareAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_DigestProcessAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_DigestFreeAlgo(uint32_t algo, TEE_Param params[4]);
+
+/* Mac Functions */
+TEE_Result TA_MacPrepareAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_MacProcessAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_MacFreeAlgo(uint32_t algo, TEE_Param params[4]);
+
+/* Asymmetric Cipher Functions */
+TEE_Result TA_AsymCipherPrepareAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_AsymCipherProcessAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_AsymCipherFreeAlgo(uint32_t algo, TEE_Param params[4]);
+
+/* Asymmetric Digest Functions */
+TEE_Result TA_AsymDigestPrepareAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_AsymDigestProcessAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_AsymDigestFreeAlgo(uint32_t algo, TEE_Param params[4]);
+
+/* Key Derivation Functions */
+TEE_Result TA_KeyDerivePrepareAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_KeyDeriveProcessAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_KeyDeriveFreeAlgo(uint32_t algo, TEE_Param params[4]);
+
+/* Authenticated Encryption Functions */
+TEE_Result TA_AuthenEncPrepareAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_AuthenEncProcessAlgo(uint32_t algo, TEE_Param params[4]);
+TEE_Result TA_AuthenEncFreeAlgo(uint32_t algo, TEE_Param params[4]);
 #endif /* TA_CRYPTO_PERF_H */
