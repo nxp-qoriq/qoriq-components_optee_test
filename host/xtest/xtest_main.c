@@ -114,6 +114,10 @@ void usage(char *program)
 	printf("\t--hash-perf [opts] Hash performance testing tool (-h for usage)\n");
 	printf("\t--aes-perf [opts]  AES performance testing tool (-h for usage)\n");
 	printf("\t--asym-perf [opts]  Asym performance testing tool (-h for usage)\n");
+	printf("\t--crypto-perf      Crypto performance testing tool for OP-TEE\n");
+	printf("\t--crypto-perf -h   show usage of Crypto performance testing tool\n");
+	printf("\n");
+
 #ifdef CFG_SECSTOR_TA_MGMT_PTA
 	printf("\t--install-ta [directory or list of TAs]\n");
 	printf("\t                   Install TAs\n");
@@ -182,6 +186,8 @@ int main(int argc, char *argv[])
 		return aes_perf_runner_cmd_parser(argc-1, &argv[1]);
 	else if (argc > 1 && !strcmp(argv[1], "--asym-perf"))
 		return asym_perf_runner_cmd_parser(argc-1, &argv[1]);
+	else if (argc > 1 && !strcmp(argv[1], "--crypto-perf"))
+		return crypto_perf_runner_cmd_parser(argc-1, &argv[1]);
 #ifdef CFG_SECSTOR_TA_MGMT_PTA
 	else if (argc > 1 && !strcmp(argv[1], "--install-ta"))
 		return install_ta_runner_cmd_parser(argc - 1, argv + 1);

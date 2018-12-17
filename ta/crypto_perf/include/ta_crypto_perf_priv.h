@@ -7,6 +7,25 @@
 #define TA_CRYPTO_PERF_PRIV_H
 
 #include <tee_api.h>
+#include <trace.h>
+
+#define FORCE_DEBUG 0
+
+#ifndef FORCE_DEBUG
+#define CHECK(res, name, action) do { \
+               if ((res) != TEE_SUCCESS) { \
+                       DMSG(name ": 0x%08x", (res)); \
+                       action \
+               } \
+       } while (0)
+#else
+#define CHECK(res, name, action) do { \
+               if ((res) != TEE_SUCCESS) { \
+                       MSG(name ": 0x%08x", (res)); \
+                       action \
+               } \
+       } while (0)
+#endif
 
 TEE_Result cmd_cipher_prepare_key(uint32_t param_types, TEE_Param params[4]);
 TEE_Result cmd_cipher_process(uint32_t param_types, TEE_Param params[4],
