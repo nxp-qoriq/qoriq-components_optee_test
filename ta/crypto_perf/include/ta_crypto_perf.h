@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
  * Copyright (c) 2015, Linaro Limited
- * Copyright 2018-2021 NXP
+ * Copyright 2018-2022 NXP
  */
 
 #ifndef TA_CRYPTO_PERF_H
@@ -42,6 +42,9 @@ struct ta_caps {
 #define TA_CRYPTO_PERF_CMD_PREPARE_ALG				15
 #define TA_CRYPTO_PERF_CMD_PROCESS				16
 #define TA_CRYPTO_PERF_CMD_FREE_ALG				17
+#define TA_CRYPTO_PERF_CMD_PREPARE_GEN				18
+#define TA_CRYPTO_PERF_CMD_GENERATE				19
+#define TA_CRYPTO_PERF_CMD_FREE_GEN				20
 
 /*
  * Supported AES modes of operation
@@ -200,4 +203,9 @@ TEE_Result TA_KeyDeriveFreeAlgo(uint32_t algo, TEE_Param params[4]);
 TEE_Result TA_AuthenEncPrepareAlgo(uint32_t algo, TEE_Param params[4]);
 TEE_Result TA_AuthenEncProcessAlgo(uint32_t algo, TEE_Param params[4]);
 TEE_Result TA_AuthenEncFreeAlgo(uint32_t algo, TEE_Param params[4]);
+
+/* Key generation functions */
+TEE_Result TA_PrepareGen(uint32_t ParamTypes, TEE_Param Params[4]);
+TEE_Result TA_Generate(uint32_t ParamTypes, TEE_Param Params[4]);
+void TA_FreeGen(void);
 #endif /* TA_CRYPTO_PERF_H */
