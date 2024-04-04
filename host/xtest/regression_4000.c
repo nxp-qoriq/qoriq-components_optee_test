@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2014, STMicroelectronics International N.V.
  * Copyright (c) 2021, SumUp Services GmbH
- * Copyright 2023 NXP
+ * Copyright 2023-2024 NXP
  */
 
 #include <stdio.h>
@@ -6198,3 +6198,166 @@ out:
 }
 ADBG_CASE_DEFINE(regression, 4016, xtest_tee_test_4016_ed25519,
 		 "Test TEE Internal API ED25519 sign/verify");
+
+static const struct xtest_ae_case ae_bad_tag_cases[] = {
+	XTEST_AE_CASE(TEE_ALG_AES_CCM, ae_data_aes_ccm_vect4, 0,
+		      2, NULL_ARRAY, ARRAY, ARRAY),
+	XTEST_AE_CASE(TEE_ALG_AES_CCM, ae_data_aes_ccm_vect4, 0,
+		      13, NULL_ARRAY, ARRAY, ARRAY),
+	XTEST_AE_CASE(TEE_ALG_AES_CCM, ae_data_aes_ccm_vect4, 0,
+		      16, NULL_ARRAY, ARRAY, ARRAY),
+};
+
+static void xtest_tee_test_4017(ADBG_Case_t *c)
+{
+	TEEC_Session session = { };
+	TEE_OperationHandle op = TEE_HANDLE_NULL;
+	TEE_ObjectHandle key_handle = TEE_HANDLE_NULL;
+	TEE_Attribute key_attr = { };
+	uint8_t out[512] = { };
+	size_t out_size = 0;
+	size_t out_offs = 0;
+	uint32_t ret_orig = 0;
+	size_t n = 0;
+
+	if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+		xtest_teec_open_session(&session, &crypt_user_ta_uuid, NULL,
+			&ret_orig)))
+		return;
+
+	for (n = 0; n < ARRAY_SIZE(ae_bad_tag_cases); n++) {
+		Do_ADBG_BeginSubCase(c, "AE case %d algo 0x%x line %d", (int)n,
+				     (unsigned int)ae_bad_tag_cases[n].algo,
+				     (int)ae_bad_tag_cases[n].line);
+
+		key_attr.attributeID = TEE_ATTR_SECRET_VALUE;
+		key_attr.content.ref.buffer = (void *)ae_bad_tag_cases[n].key;
+		key_attr.content.ref.length = ae_bad_tag_cases[n].key_len;
+
+		if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+			ta_crypt_cmd_allocate_operation(c, &session, &op,
+				ae_bad_tag_cases[n].algo,
+				ae_bad_tag_cases[n].mode,
+				key_attr.content.ref.length * 8)))
+			goto out;
+
+		if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+			ta_crypt_cmd_allocate_transient_object(c, &session,
+				ae_bad_tag_cases[n].key_type,
+				key_attr.content.ref.length * 8,
+				&key_handle)))
+			goto out;
+
+		if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+			ta_crypt_cmd_populate_transient_object(c, &session,
+				key_handle, &key_attr, 1)))
+			goto out;
+
+		if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+			ta_crypt_cmd_set_operation_key(c, &session, op,
+				key_handle)))
+			goto out;
+
+		if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+			ta_crypt_cmd_free_transient_object(c, &session,
+				key_handle)))
+			goto out;
+		key_handle = TEE_HANDLE_NULL;
+
+		if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+			ta_crypt_cmd_ae_init(c, &session, op,
+			ae_bad_tag_cases[n].nonce,
+			ae_bad_tag_cases[n].nonce_len,
+			ae_bad_tag_cases[n].tag_len,
+			ae_bad_tag_cases[n].aad_len,
+			ae_bad_tag_cases[n].ptx_len)))
+			goto out;
+
+		if (ae_cases[n].aad != NULL) {
+			if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+				ta_crypt_cmd_ae_update_aad(c, &session, op,
+					ae_bad_tag_cases[n].aad,
+					ae_bad_tag_cases[n].aad_incr)))
+				goto out;
+
+			if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+				ta_crypt_cmd_ae_update_aad(c, &session, op,
+					ae_bad_tag_cases[n].aad +
+						ae_bad_tag_cases[n].aad_incr,
+					ae_bad_tag_cases[n].aad_len -
+						ae_bad_tag_cases[n].aad_incr)))
+				goto out;
+		}
+
+		out_offs = 0;
+		out_size = sizeof(out);
+		memset(out, 0, sizeof(out));
+		if (ae_bad_tag_cases[n].mode == TEE_MODE_ENCRYPT) {
+			if (ae_bad_tag_cases[n].ptx != NULL) {
+				if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+					ta_crypt_cmd_ae_update(c, &session, op,
+						ae_bad_tag_cases[n].ptx,
+						ae_bad_tag_cases[n].in_incr,
+						out, &out_size)))
+					goto out;
+				out_offs += out_size;
+			}
+		} else {
+			if (ae_bad_tag_cases[n].ctx != NULL) {
+				if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+					ta_crypt_cmd_ae_update(c, &session, op,
+						ae_bad_tag_cases[n].ctx,
+						ae_bad_tag_cases[n].in_incr,
+						out, &out_size)))
+					goto out;
+				out_offs += out_size;
+			}
+		}
+
+		out_size = sizeof(out) - out_offs;
+		if (ae_bad_tag_cases[n].mode == TEE_MODE_ENCRYPT) {
+			uint8_t out_tag[64];
+			size_t out_tag_len = MIN(sizeof(out_tag),
+						 ae_bad_tag_cases[n].tag_len);
+
+			if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+				ta_crypt_cmd_ae_encrypt_final(c, &session, op,
+					ae_bad_tag_cases[n].ptx +
+						ae_bad_tag_cases[n].in_incr,
+					ae_bad_tag_cases[n].ptx_len -
+						ae_bad_tag_cases[n].in_incr,
+					out + out_offs,
+					&out_size, out_tag, &out_tag_len)))
+				goto out;
+
+			(void)ADBG_EXPECT_COMPARE_SIGNED(c,
+				0, !=, memcmp(ae_bad_tag_cases[n].tag, out_tag,
+					      out_tag_len));
+
+			out_offs += out_size;
+		} else {
+			if (!ADBG_EXPECT_TEEC_RESULT(c, TEE_ERROR_MAC_INVALID,
+				ta_crypt_cmd_ae_decrypt_final(c, &session, op,
+					ae_bad_tag_cases[n].ctx +
+						ae_bad_tag_cases[n].in_incr,
+					ae_bad_tag_cases[n].ctx_len -
+						ae_bad_tag_cases[n].in_incr,
+					out + out_offs,
+					&out_size, ae_bad_tag_cases[n].tag,
+					ae_bad_tag_cases[n].tag_len)))
+				goto out;
+
+			out_offs += out_size;
+		}
+
+		if (!ADBG_EXPECT_TEEC_SUCCESS(c,
+			ta_crypt_cmd_free_operation(c, &session, op)))
+			goto out;
+
+		Do_ADBG_EndSubCase(c, NULL);
+	}
+out:
+	TEEC_CloseSession(&session);
+}
+ADBG_CASE_DEFINE(regression, 4017, xtest_tee_test_4017,
+		"Test TEE Internal API Authenticated Encryption operations");
