@@ -7070,7 +7070,7 @@ static void xtest_tee_test_4018(ADBG_Case_t *c)
 			ae_bad_tag_cases[n].ptx_len)))
 			goto out;
 
-		if (ae_cases[n].aad != NULL) {
+		if (ae_bad_tag_cases[n].aad != NULL) {
 			if (!ADBG_EXPECT_TEEC_SUCCESS(c,
 				ta_crypt_cmd_ae_update_aad(c, &session, op,
 					ae_bad_tag_cases[n].aad,
